@@ -7,6 +7,7 @@ var client = new pg.Client(db.conString);
 // GeoJSON Feature Collection
 function FeatureCollection(){
     this.type = 'FeatureCollection';
+    this.crs = { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } };
     this.features = new Array();
 }
 
@@ -14,29 +15,45 @@ module.exports = function(app) {
 
     app.get('/tracks', function(req, res, next) {
 
-        var sql = "select ST_AsGeoJSON(tracks.geom) as shape from public.tracks;";
+
+        var sql = "SELECT json_build_object('type', 'Feature','id', gid,'geometry', ST_AsGeoJSON(ST_Transform (geom,4326))::jsonb)FROM public.tracks;";
 
         var query = client.query(sql, function(err, result) {
             var featureCollection = new FeatureCollection();
 
             for (i = 0; i < result.rows.length; i++)
             {
-                featureCollection.features[i] = JSON.parse(result.rows[i].shape);
+                featureCollection.features[i] = result.rows[i].json_build_object;
             }
             res.send(featureCollection);
         });
     });
 
-    app.get('/tunnels', function(req, res, next) {
+    app.get('/signals', function(req, res, next) {
 
-        var sql = "select ST_AsGeoJSON(tunnels.geom) as shape from public.tunnels;";
+        var sql = "SELECT json_build_object('type', 'Feature','id', gid,'geometry', ST_AsGeoJSON(ST_Transform (geom,4326))::jsonb)FROM public.signals;";
 
         var query = client.query(sql, function(err, result) {
             var featureCollection = new FeatureCollection();
 
             for (i = 0; i < result.rows.length; i++)
             {
-                featureCollection.features[i] = JSON.parse(result.rows[i].shape);
+                featureCollection.features[i] = result.rows[i].json_build_object;
+            }
+            res.send(featureCollection);
+        });
+    });
+
+    app.get('/platforms', function(req, res, next) {
+
+        var sql = "SELECT json_build_object('type', 'Feature','id', gid,'geometry', ST_AsGeoJSON(ST_Transform (geom,4326))::jsonb)FROM public.platforms;";
+
+        var query = client.query(sql, function(err, result) {
+            var featureCollection = new FeatureCollection();
+
+            for (i = 0; i < result.rows.length; i++)
+            {
+                featureCollection.features[i] = result.rows[i].json_build_object;
             }
             res.send(featureCollection);
         });
