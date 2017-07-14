@@ -13,47 +13,22 @@ function FeatureCollection(){
 
 module.exports = function(app) {
 
-    app.get('/tracks', function(req, res, next) {
+    app.get('/data/:layer', function(req, res, next) {
 
+        // for postgres 9.4+
+        var sql = "SELECT json_build_object('type', 'Feature','id', gid,'geometry', ST_AsGeoJSON(ST_Transform (geom,4326))::jsonb)FROM " + req.params.layer;
+        // for postgres < 9.4
+        var sql_old = "SELECT row_to_json(f) As feature FROM (SELECT 'Feature' As type, ST_AsGeoJSON(ST_Transform (geom,4326))::json As geometry, row_to_json((SELECT l FROM (SELECT gid AS feat_id) As l)) As properties FROM " + req.params.layer + " As l) As f;"
 
-        var sql = "SELECT json_build_object('type', 'Feature','id', gid,'geometry', ST_AsGeoJSON(ST_Transform (geom,4326))::jsonb)FROM public.tracks;";
-
-        var query = client.query(sql, function(err, result) {
+        var query = client.query(sql_old, function(err, result) {
             var featureCollection = new FeatureCollection();
 
             for (i = 0; i < result.rows.length; i++)
             {
-                featureCollection.features[i] = result.rows[i].json_build_object;
-            }
-            res.send(featureCollection);
-        });
-    });
-
-    app.get('/signals', function(req, res, next) {
-
-        var sql = "SELECT json_build_object('type', 'Feature','id', gid,'geometry', ST_AsGeoJSON(ST_Transform (geom,4326))::jsonb)FROM public.signals;";
-
-        var query = client.query(sql, function(err, result) {
-            var featureCollection = new FeatureCollection();
-
-            for (i = 0; i < result.rows.length; i++)
-            {
-                featureCollection.features[i] = result.rows[i].json_build_object;
-            }
-            res.send(featureCollection);
-        });
-    });
-
-    app.get('/platforms', function(req, res, next) {
-
-        var sql = "SELECT json_build_object('type', 'Feature','id', gid,'geometry', ST_AsGeoJSON(ST_Transform (geom,4326))::jsonb)FROM public.platforms;";
-
-        var query = client.query(sql, function(err, result) {
-            var featureCollection = new FeatureCollection();
-
-            for (i = 0; i < result.rows.length; i++)
-            {
-                featureCollection.features[i] = result.rows[i].json_build_object;
+                // for postgres 9.4+
+                //featureCollection.features[i] = result.rows[i].json_build_object;
+                // for postgres <9.4 ex. db.qgiscloud
+                featureCollection.features[i] = result.rows[i].feature;
             }
             res.send(featureCollection);
         });
