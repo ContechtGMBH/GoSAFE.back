@@ -18,7 +18,7 @@ module.exports = function(app) {
         // for postgres 9.4+
         var sql = "SELECT json_build_object('type', 'Feature','id', gid,'geometry', ST_AsGeoJSON(ST_Transform (geom,4326))::jsonb)FROM " + req.params.layer;
         // for postgres < 9.4
-        var sql_old = "SELECT row_to_json(f) As feature FROM (SELECT 'Feature' As type, ST_AsGeoJSON(ST_Transform (geom,4326))::json As geometry, row_to_json((SELECT l FROM (SELECT gid AS feat_id) As l)) As properties FROM " + req.params.layer + " As l) As f;"
+        var sql_old = "SELECT row_to_json(f) As feature FROM (SELECT 'Feature' As type, ST_AsGeoJSON(ST_Transform (geom,4326))::json As geometry, row_to_json((SELECT l FROM (SELECT gid, descriptio) As l)) As properties FROM " + req.params.layer + " As l) As f;"
 
         var query = client.query(sql_old, function(err, result) {
             var featureCollection = new FeatureCollection();
