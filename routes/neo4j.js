@@ -123,4 +123,13 @@ module.exports = function(app) {
       });
     })
 
+    app.post('/api/v1/neighbourhood', function(req, res) {
+      db.cypher({
+        query: "CALL spatial.intersects('buildings', '" + req.body.wkt + "')"
+      }, function (err, results) {
+        if (err) throw err;
+        res.json(results)
+      });
+    })
+
 }
