@@ -13,7 +13,7 @@ var app = express();
 
 //app.use(logger('dev'));
 app.use(morgan('dev'));
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit: '10mb'}));
 app.use(fileUpload());
 //app.use(bodyParser.urlencoded({ extended: false }));
 
