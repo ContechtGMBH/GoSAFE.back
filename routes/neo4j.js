@@ -25,7 +25,7 @@ module.exports = function(app) {
      */
     app.get('/api/v1/tracks', function(req, res) {
       db.cypher({
-        query: 'MATCH (n:Track) RETURN n'
+        query: 'MATCH (n:Track)-[:HAS_TRACK]-(l) RETURN n,l'
       }, function (err, results) {
         if (err) throw err;
         res.json(results)
@@ -123,7 +123,7 @@ module.exports = function(app) {
         if (err) throw err;
         var graph = {
           nodes: [],
-          links: []
+          edges: []
         }
         if (results.length){
           var trackNode = {}
@@ -141,9 +141,10 @@ module.exports = function(app) {
             elementNode.label = item.e.labels[0]
             elementNode.color = elementColors[elementNode.label]
 
-            graph.nodes.push(elementNode)
-
-            graph.links.push({source: trackNode.id, target: elementNode.id, label: item.r.type})
+            if (elementNode.id && elementNode.label){
+              graph.nodes.push(elementNode)
+              graph.edges.push({from: trackNode.id, to: elementNode.id, label: item.r.type})
+            }
 
           })
         } else {
@@ -155,26 +156,26 @@ module.exports = function(app) {
 
     app.post('/api/v1/elementstograph', function(req, res) {
       db.cypher({
-        query: 'MATCH (n:`' + req.body.label + '` {id: "' + req.body.id + '"})-[r]-(e) RETURN n,r,e', // string concatenations are not recommended
+        query: 'MATCH (n:`' + req.body.label + '` {id: "' + req.body.id + '"})-[r]-(e) WHERE TYPE(r)<>"HAS_TRACK" RETURN n,r,e', // string concatenations are not recommended
 
       }, function (err, results) {
         if (err) throw err;
         var graph = {
           nodes: [],
-          links: []
+          edges: []
         }
         var mainNode = req.body.id
 
         results.forEach((item) => {
           var elementNode = {}
           elementNode.properties = item.e.properties
-          elementNode.id = item.e.properties.id
-          elementNode.label = item.e.labels[0]
+          elementNode.id = item.e.properties.id || item.e._id
+          elementNode.label = item.e.labels[0] || "Unknown"
           elementNode.color = elementColors[elementNode.label]
 
           graph.nodes.push(elementNode)
 
-          graph.links.push({source: mainNode, target: elementNode.id, label: item.r.type})
+          graph.edges.push({from: mainNode, to: elementNode.id, label: item.r.type})
 
         })
         res.json(graph)
