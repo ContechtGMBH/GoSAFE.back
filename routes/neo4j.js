@@ -14,6 +14,15 @@ var elementColors = {
 
 }
 
+var setLabel = function(query, label){
+  var re = /^[a-zA-Z0-9]+$/
+  if (re.test(label)){
+    return query.replace('#LABEL#', label)
+  } else {
+    return ''
+  }
+}
+
 
 module.exports = function(app) {
    /**
@@ -86,8 +95,12 @@ module.exports = function(app) {
      * @apiSuccess (200) {boolean} removed returns true
      */
     app.post('/api/v1/remove/element', function(req, res) {
+      var q = 'MATCH (n:`#LABEL#` {id:{element_id}}) DETACH DELETE n'
       db.cypher({
-        query: 'MATCH (n:`' + req.body.label + '` {id:' + req.body.id + '}) DETACH DELETE n', // string concatenations are not recommended
+        query: setLabel(q, req.body.label),
+        params: {
+          element_id: req.body.id
+        }
       }, function (err, results) {
         if (err) throw err;
         res.json(true)
@@ -104,7 +117,10 @@ module.exports = function(app) {
      */
     app.post('/api/v1/remove/track', function(req, res) {
       db.cypher({
-        query: 'MATCH (e)-[]-(t:`Track` {id:' + req.body.id + '})-[]-(s)-[:HAS_CONNECTION]-(c:Connection) DETACH DELETE t,e,s,c', // string concatenations are not recommended
+        query: 'MATCH (e)-[]-(t:`Track` {id:{track_id}})-[]-(s)-[:HAS_CONNECTION]-(c:Connection) DETACH DELETE t,e,s,c',
+        params: {
+          track_id: req.body.id
+        }
       }, function (err, results) {
         if (err) throw err;
         res.json(true)
@@ -121,8 +137,10 @@ module.exports = function(app) {
       */
     app.post('/api/v1/tracktograph', function(req, res) {
       db.cypher({
-        query: 'MATCH (n:Track {id: "' + req.body.id + '"})-[r]->(e) RETURN n,r,e', // string concatenations are not recommended
-
+        query: 'MATCH (n:Track {id: {track_id}})-[r]->(e) RETURN n,r,e', // string concatenations are not recommended
+        params: {
+          track_id: req.body.id
+        }
       }, function (err, results) {
         if (err) throw err;
         var graph = {
@@ -168,9 +186,12 @@ module.exports = function(app) {
       * @apiSuccess (200) {object} graph returns an object with nodes and edges, that can be loaded in vis.js
       */
     app.post('/api/v1/elementstograph', function(req, res) {
+      var q = 'MATCH (n:`#LABEL#` {id: {element_id}})-[r]-(e) WHERE TYPE(r)<>"HAS_TRACK" RETURN n,r,e'
       db.cypher({
-        query: 'MATCH (n:`' + req.body.label + '` {id: "' + req.body.id + '"})-[r]-(e) WHERE TYPE(r)<>"HAS_TRACK" RETURN n,r,e', // string concatenations are not recommended
-
+        query: setLabel(q, req.body.label), // string concatenations are not recommended
+        params: {
+          element_id: req.body.id
+        }
       }, function (err, results) {
         if (err) throw err;
         var graph = {

@@ -5,4 +5,5 @@ module.exports = function(app) {
 	require('./routes/authentication.js')(app);
 	require('./routes/railml.js')(app);
 	require('./routes/neo4j.js')(app);
+	require('./routes/realtime.js')(app);
 }
